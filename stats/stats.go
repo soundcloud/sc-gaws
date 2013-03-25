@@ -37,6 +37,14 @@ type Stats struct {
 	currentSamples map[string][]Metric
 }
 
+func NewStats(pusher StatsPusher, accumulateLimit int) *Stats {
+    return &Stats{
+        pusher,
+        accumulateLimit,
+		make(map[string][]Metric),
+	}
+}
+
 // Add a metric to the Stats struct, with averaging applied.
 func (s *Stats) addMetric(m Metric) {
 	s.currentSamples[m.Name] = append(s.currentSamples[m.Name], m)

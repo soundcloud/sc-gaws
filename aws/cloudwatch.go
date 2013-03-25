@@ -1,8 +1,8 @@
 // Types and functions to push metrics to AWS Cloudwatch
-package main
+package aws
 
 import (
-	"./credentials"
+	"github.com/soundcloud/sc-gaws/aws/credentials"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -11,7 +11,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-    "stats"
+    "github.com/soundcloud/sc-gaws/stats"
 	"sort"
 	"strings"
 	"time"
