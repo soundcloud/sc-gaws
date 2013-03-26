@@ -1,3 +1,10 @@
+// Types and functions that expose a backend-agnostic metrics publishing
+// interface to consumers. Initialise a Stats struct with some intial
+// configuration and then call AccumulateAndPush.
+//
+//  m := make(chan stats.Metric)
+//  s := stats.NewStats(aws.AwsStatsPusher{Credentials: credentialsProvider, Namespace: "example"},10)
+//  go s.AccumulateAndPush(60*time.Second, m) // Update stats every 60s
 package stats
 
 import (
@@ -98,11 +105,8 @@ func (s *Stats) accumulate() []Metric {
 	return allMetrics
 }
 
-// Accumulate and pushes metrics upstream. This is designed to run in a
-// goroutine.
-//
-// The duration of pushing can be controlled by statsUpdateFrequency. Metrics
-// are received on metricChan.
+// Listen for metrics on metricsChan, accumulate and push metrics upstream. The
+// duration of pushing can be controlled by statsUpdateFrequency.
 func (s *Stats) AccumulateAndPush(statsUpdateFrequency time.Duration, metricChan <-chan Metric) {
 	t := time.Tick(statsUpdateFrequency)
 	for {
