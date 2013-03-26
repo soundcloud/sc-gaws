@@ -2,16 +2,16 @@
 package aws
 
 import (
-	"github.com/soundcloud/sc-gaws/aws/credentials"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"github.com/soundcloud/sc-gaws/aws/credentials"
+	"github.com/soundcloud/sc-gaws/stats"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
-    "github.com/soundcloud/sc-gaws/stats"
 	"sort"
 	"strings"
 	"time"

@@ -38,9 +38,9 @@ type Stats struct {
 }
 
 func NewStats(pusher StatsPusher, accumulateLimit int) *Stats {
-    return &Stats{
-        pusher,
-        accumulateLimit,
+	return &Stats{
+		pusher,
+		accumulateLimit,
 		make(map[string][]Metric),
 	}
 }
