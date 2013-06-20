@@ -34,7 +34,7 @@ func credentialsRefresher(c *ec2MetadataCredentials, role string) {
 		timeout := time.After(duration - (1 * time.Second))
 		select {
 		case <-timeout:
-            err := fetchRoleCredentials(role, c)
+			err := fetchRoleCredentials(role, c)
 			if err != nil {
 				log.Printf("Error fetching role credentials. Retrying in %ds: %s", defaultFetchDuration, err)
 				duration = defaultFetchDuration
@@ -46,15 +46,16 @@ func credentialsRefresher(c *ec2MetadataCredentials, role string) {
 }
 
 func calculateRefreshDuration(expiration string) (duration time.Duration) {
-    expiry, err := time.Parse(time.RFC3339, expiration)
+	expiry, err := time.Parse(time.RFC3339, expiration)
 	if err != nil {
-		log.Fatalf("Could not parse expiration - %s : %s", expiration, err)
+		log.Printf("Could not parse expiration - %s : %s", expiration, err)
 		duration = defaultFetchDuration
-	}
-	duration = expiry.Sub(time.Now())
-	if duration < 0 {
-		log.Printf("Credentials already expired at %s. Initiating refresh", expiration)
-		duration = 1 * time.Second
+	} else {
+		duration = expiry.Sub(time.Now())
+		if duration < 0 {
+			log.Printf("Credentials already expired at %s. Initiating refresh", expiration)
+			duration = 1 * time.Second
+		}
 	}
 	return
 }
