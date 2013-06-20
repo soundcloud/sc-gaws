@@ -8,8 +8,8 @@ import (
 func TestInvalidExpiryTime(t *testing.T) {
 	duration := calculateRefreshDuration("invalid")
 
-	if duration != defaultFetchDuration {
-		t.Fatalf("Expected duration to be %d, got %d", defaultFetchDuration, duration)
+	if duration != defaultRefreshDuration {
+		t.Fatalf("Expected duration to be %d, got %d", defaultRefreshDuration, duration)
 	}
 }
 
