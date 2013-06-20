@@ -21,30 +21,42 @@ import (
 
 const (
 	// Prefix for the URL to hit the EC2 Metadata API with
-	credentialsEndpoint = "http://169.254.169.254/latest/meta-data/iam/security-credentials/"
+	credentialsEndpoint  = "http://169.254.169.254/latest/meta-data/iam/security-credentials/"
+	defaultFetchDuration = 5 * time.Second
 )
 
 // Refresh IAM Role credentials for EC2 Metadata API before they expire
 func credentialsRefresher(c *ec2MetadataCredentials, role string) {
-	for {
-		expiry, err := time.Parse(time.RFC3339, c.Expiration)
-		if err != nil {
-			log.Fatalf("Could not parse expiration - %s : %s", c.Expiration, err)
-		}
-		duration := expiry.Sub(time.Now())
-		if duration < 0 {
-			log.Printf("Credentials already expired at %s. Initiating refresh", c.Expiration)
-			duration = 1
-		}
+	duration := calculateRefreshDuration(c.Expiration)
 
-		t := time.After(duration - (1 * time.Second))
+	for {
 		log.Printf("Refreshing credentials in %s", duration)
+		timeout := time.After(duration - (1 * time.Second))
 		select {
-		case <-t:
-			fetchRoleCredentials(role, c)
-			break
+		case <-timeout:
+            err := fetchRoleCredentials(role, c)
+			if err != nil {
+				log.Printf("Error fetching role credentials. Retrying in %ds: %s", defaultFetchDuration, err)
+				duration = defaultFetchDuration
+			} else {
+				duration = calculateRefreshDuration(c.Expiration)
+			}
 		}
 	}
+}
+
+func calculateRefreshDuration(expiration string) (duration time.Duration) {
+    expiry, err := time.Parse(time.RFC3339, expiration)
+	if err != nil {
+		log.Fatalf("Could not parse expiration - %s : %s", expiration, err)
+		duration = defaultFetchDuration
+	}
+	duration = expiry.Sub(time.Now())
+	if duration < 0 {
+		log.Printf("Credentials already expired at %s. Initiating refresh", expiration)
+		duration = 1 * time.Second
+	}
+	return
 }
 
 // Fetch credentials for a role
