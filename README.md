@@ -33,6 +33,40 @@ func myFunc() {
 }
 ```
 
+### aws/elasticache
+This package provides a mechanism for auto-discovery of ElastiCache servers.
+It is recommended you get the configuration data on a 60 second timer and
+keep track of configuration version numbers, so that you can set your
+client to use the new set of servers only when they change.
+
+```
+import (
+    "elasticache"
+    "log"
+)
+
+var configVersion = 0
+
+func updaterGoRoutine(autoDiscoveryConfigHost string) {
+    autoDiscoverer, err := elasticache.NewAutoDiscoverer(autoDiscoveryConfigHost)
+    if err != nil {
+        log.Fatal(err.Error())
+    }
+
+    for {
+        version, elastiCacheServers, err := autoDiscoverer.GetClusterConfig()
+
+        if version > configVersion {
+            configVersion = version
+
+            // call SetServers on the Memcache client ServerList
+        }
+
+        time.Sleep(60 * time.Second)
+    }
+}
+```
+
 ### aws and stats
 
 ```
