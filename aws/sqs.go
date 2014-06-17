@@ -29,7 +29,6 @@ func NewSqsClient(endpoint string, credentials credentials.CredentialsProvider) 
 	return SqsClient{endpoint, credentials, &http.Client{}}
 }
 
-// Push a slice of metrics to CloudWatch
 func (s SqsClient) Publish(message string) error {
 
 	urlStr := fmt.Sprintf("%s/?Action=SendMessage&Version=%s&Timestamp=%s&MessageBody=%s", s.Endpoint, sqsApiVersion, url.QueryEscape(timeInRfc3339(time.Now())), url.QueryEscape(message))
