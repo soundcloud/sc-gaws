@@ -25,8 +25,8 @@ type SqsClient struct {
 	client *http.Client
 }
 
-func NewSqsClient(endpoint string, credentials credentials.CredentialsProvider) SqsClient {
-	return SqsClient{endpoint, credentials, &http.Client{}}
+func NewSqsClient(endpoint string, credentials credentials.CredentialsProvider) *SqsClient {
+	return &SqsClient{endpoint, credentials, &http.Client{}}
 }
 
 func (s SqsClient) Publish(message string) error {
