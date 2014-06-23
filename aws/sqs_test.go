@@ -19,7 +19,7 @@ func TestPublish(t *testing.T) {
 	}
 
 	sqlClient := NewSqsClient(endpoint, credentials.NewIamUserCredentials(awsAkId, awsSecretAk))
-	err := sqlClient.Publish("Testdsfsdfdsäfdksfäösdf843009348093853089")
+	err := sqlClient.Publish("Test a message with spaces")
 
 	if err != nil {
 		t.Fatalf(err.Error())
