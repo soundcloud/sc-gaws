@@ -31,9 +31,11 @@ func NewSqsClient(endpoint string, credentials credentials.CredentialsProvider) 
 
 func (s SqsClient) Publish(message string) error {
 
-	urlStr := fmt.Sprintf("%s/?Action=SendMessage&Version=%s&Timestamp=%s&MessageBody=%s", s.Endpoint, sqsApiVersion, url.QueryEscape(timeInRfc3339(time.Now())), url.QueryEscape(message))
+	encodedMsg := url.QueryEscape(url.QueryEscape(message)) // SH: Message payload needs to be encoded twice or else spaces in message break signature method
+	urlStr := fmt.Sprintf("%s/?Action=SendMessage&Version=%s&Timestamp=%s&MessageBody=%s", s.Endpoint, sqsApiVersion, url.QueryEscape(timeInRfc3339(time.Now())), encodedMsg)
 	req, _ := http.NewRequest("GET", urlStr, nil)
 	sign(req, s.Credentials.GetCredentials())
+	fmt.Println(req.URL.RawQuery)
 	res, err := s.client.Do(req)
 	if err != nil {
 		return err
