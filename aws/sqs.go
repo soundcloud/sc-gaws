@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"unicode/utf8"
 )
 
 const (
 	sqsApiVersion = "2012-11-05"
+	maxMessageLength = 8000
 )
 
 // AwsStatsPusher implements the StatsPusher interface to allow
@@ -31,12 +33,17 @@ func NewSqsClient(endpoint string, credentials credentials.CredentialsProvider) 
 
 func (s SqsClient) Publish(message string) error {
 
+	len := utf8.RuneCountInString(message)
+	if len > maxMessageLength {
+		return fmt.Errorf("Message is too long (%d chars), maximum is %d chars.", len, maxMessageLength)	
+	}
+
 	encodedMsg := url.QueryEscape(url.QueryEscape(message)) // SH: Message payload needs to be encoded twice or else spaces in message break signature method
 	urlStr := fmt.Sprintf("%s/?Action=SendMessage&Version=%s&Timestamp=%s&MessageBody=%s", s.Endpoint, sqsApiVersion, url.QueryEscape(timeInRfc3339(time.Now())), encodedMsg)
 	req, _ := http.NewRequest("GET", urlStr, nil)
 	sign(req, s.Credentials.GetCredentials())
-	fmt.Println(req.URL.RawQuery)
 	res, err := s.client.Do(req)
+	
 	if err != nil {
 		return err
 	} else {
