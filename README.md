@@ -97,3 +97,43 @@ func myFunc() {
     metricsChan <- stats.Metric{"WidgetResponseTimeMs", duration, "Average", time.Now()}
 }
 ```
+
+### aws/cloudfront
+When using Cloudfront with Restrict Viewer Access option, every url need to be signed.
+
+This package implement [canned policies signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html).
+
+It require a valid [cloudfront private key](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs).
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+
+    "github.com/soundcloud/sc-gaws/aws/cloudfront"
+)
+
+func main() {
+    privateKey, _ := cloudfront.NewRSAPrivateKeyFromFile("pk-KeyPairId.pem")
+
+    // if you are going to use the private key multiple time you may want to 
+    // use privateKey.Precompute() which speed up private key operations.
+
+    cannedPolicy := cloudfront.CannedPolicy{
+        Url:       "http://cloudfront-foobar.com/my-sweet-file.mp3", 
+        ExpiresAt: time.Now().Add(time.Duration(2 * time.Minute)),
+    }
+
+    signature, _ := cloudfront.SignPolicy(privateKey, cannedPolicy)
+
+    fmt.Printf("%v", signature)
+}
+```
+
+Once you got your signature, you can generate a valid cloudfront URL 
+
+```
+protocol://url?Expires=ExpirationTimeInEpoch&Signature=Signature&Key-Pair-Id=CloudfrontKeyPairId
+```
