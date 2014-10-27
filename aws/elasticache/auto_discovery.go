@@ -33,18 +33,14 @@ type ElastiCacheServer struct {
 
 // AutoDiscoverer is an ElastiCache Auto Discovery client.
 type AutoDiscoverer struct {
-	addr net.Addr
+	// Elasticache Configuration Endpoint DNS Name
+	endpoint string
 }
 
 // NewAutoDiscover takes an ElastiCache configuration server address string
-// like "127.0.0.1:11211", and returns an *AutoDiscoverer and error.
+// like "foo.cfg.amazonaws.com:11211", and returns an *AutoDiscoverer and error.
 func NewAutoDiscoverer(configServer string) (*AutoDiscoverer, error) {
-	addr, err := net.ResolveTCPAddr("tcp", configServer)
-	if err != nil {
-		return nil, err
-	}
-
-	return &AutoDiscoverer{addr: addr}, nil
+	return &AutoDiscoverer{configServer}, nil
 }
 
 // GetClusterConfig returns the current ElastiCache cluster configuration:
@@ -54,7 +50,16 @@ func NewAutoDiscoverer(configServer string) (*AutoDiscoverer, error) {
 // and only replace the active servers in the Memcache client when the version
 // number increases.
 func (a *AutoDiscoverer) GetClusterConfig() (int, []ElastiCacheServer, error) {
-	cn, err := connect(a.addr)
+	var (
+		addr net.Addr
+		err  error
+	)
+
+	if addr, err = net.ResolveTCPAddr("tcp", a.endpoint); err != nil {
+		return 0, nil, fmt.Errorf("Cannot resolve tcp address: %v", err)
+	}
+
+	cn, err := connect(addr)
 	if err != nil {
 		return 0, nil, err
 	}
