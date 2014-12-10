@@ -11,6 +11,16 @@ import (
 	"strings"
 )
 
+// CloudFront uses its own Base64 encoding
+const encodeCloudFront = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-~"
+
+// PolicySigner is the interface implemented by an object that can return a
+// signed string representing its CloudFront policy.
+type PolicySigner interface {
+	signWithPrivateKey(*rsa.PrivateKey) ([]byte, error)
+	String() string
+}
+
 // NewRSAPRivateKeyFromBytes get the first block of a PEM encoded bytes
 // and return a rsa.PrivateKey
 func NewRSAPrivateKeyFromBytes(b []byte) (*rsa.PrivateKey, error) {
@@ -48,36 +58,44 @@ func NewRSAPrivateKeyFromFile(filename string) (*rsa.PrivateKey, error) {
 	return NewRSAPrivateKeyFromBytes(b)
 }
 
-// SignPolicy return the proper signature needed to generate a valid Cloudfront
-// Signed URL.
+// SignPolicy return the proper signature and other parameters needed to
+// generate a valid Cloudfront Signed URL.
+// For canned policies this is: Expires, Signature, Key-Pair-Id
+// For custom policies this is: Policy, Signature, Key-Pair-Id
 //
 // More information:
 //   http://goo.gl/pvA97e
 // Command line equivalent:
 //   cat policy | openssl sha1 -sign cloudfront-keypair.pem | openssl base64 | tr '+=/' '-_~'
-func SignPolicy(privateKey *rsa.PrivateKey, policy CannedPolicy) (string, error) {
-	signedPolicy, err := policy.signWithPrivateKey(privateKey)
-
+func SignPolicy(privateKey *rsa.PrivateKey, policy PolicySigner, keyPairID string) (string, error) {
+	signature, err := policy.signWithPrivateKey(privateKey)
 	if err != nil {
 		return "", fmt.Errorf("Cannot sign policy: %v", err)
 	}
 
-	signedPolicyBase64 := base64.StdEncoding.EncodeToString(signedPolicy)
-
-	cloudfrontFmt := func(r rune) rune {
+	encoding := base64.NewEncoding(encodeCloudFront)
+	paddingMap := func(r rune) rune {
 		switch r {
-		case '+':
-			return '-'
 		case '=':
 			return '_'
-		case '/':
-			return '~'
-		case ' ':
-			return 0
 		default:
 			return r
 		}
 	}
 
-	return strings.Map(cloudfrontFmt, signedPolicyBase64), nil
+	switch policy.(type) {
+	case CannedPolicy:
+		return fmt.Sprintf("Expires=%d&Signature=%s&Key-Pair-Id=%s",
+			policy.(CannedPolicy).ExpiresAt.Unix(),
+			strings.Map(paddingMap, encoding.EncodeToString(signature)),
+			keyPairID,
+		), nil
+	case CustomPolicy:
+		return fmt.Sprintf("Policy=%s&Signature=%s&Key-Pair-Id=%s",
+			strings.Map(paddingMap, encoding.EncodeToString([]byte(policy.String()))),
+			strings.Map(paddingMap, encoding.EncodeToString(signature)),
+			keyPairID,
+		), nil
+	}
+	return "", nil
 }

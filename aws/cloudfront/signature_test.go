@@ -1,6 +1,23 @@
 package cloudfront
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
+
+var (
+	testURL        = "http://d5helwpxwoaq8.cloudfront.net/3tGKc9yN1IfN.128.mp3"
+	testExpiryTime = time.Unix(1412799136, 0)
+	testStartTime  = time.Unix(1412799000, 0)
+	testSourceIP   = "192.0.2.1"
+
+	// Signature, for convenience is base64 encoded
+	// Generated with:
+	// echo -n canned_policy_content | openssl sha1 -sign test_private_key.pem | openssl base64
+	// where canned_policy_content is equal to expectedCannedPolicyString
+	expectedCannedSignature = `Expires=1412799136&Signature=ad9AA87ApevgO6cyNqlDqMOk0f35QCe7YbWyeY13vifI7xPEqyc85Nf9XBNtzyHZDD-u-nN5wcgByuMlMwN9yLDEV0B6AHVzKmcOyFuJKVqxGffrOh7LxxjpNImTJ1EgXHO-kY-buFHv5yoWraqGI7rMQ88a~dxViLrK7JL3yAQAV7HNes8dN8J1PIgTg1gSBKvNuH1QGjjyBJMcReY0kMJZsJVikHAx3N76xRzIPRBXd1-d9Q~6X6kWy8N2GuV9i4fpoa4Svwirz~HlvWjStuXN6Go7HSOnqLBCSLHnmwxhFrGFrqwTzNy671sw8VeT4NBZCrwrOtrfdAEevsen0w__&Key-Pair-Id=APKA9ONS7QCOWEXAMPLE`
+	expectedCustomSignature = `Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cDovL2Q1aGVsd3B4d29hcTguY2xvdWRmcm9udC5uZXQvM3RHS2M5eU4xSWZOLjEyOC5tcDMiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE0MTI3OTkxMzZ9LCJEYXRlR3JlYXRlclRoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTQxMjc5OTAwMH0sIklwQWRkcmVzcyI6eyJBV1M6U291cmNlSXAiOiIxOTIuMC4yLjEifX19XX0_&Signature=xEbhq3QI57fcobwlQL85esB2l-QuOroXdi15XTSXij2rw1LTxzjFIGK5w6f-KBscbO0vrVh~5DAbae7wPqRak0W3A-2h6IUV1AysggyIt0E1BCHjPe2iVDVdZdZ3tytEY1dAjv7kxZvqETzue8w3NyZqaW9lHIPKkMmn-Kyv0-2J5lFUymqud~LE~9ks65PReBwf-HPusPucb61cZdDWH7ccB4z4uGy5Osd09zR-yY9Q5cy65NkNZyd-z4UT-Aoj3CcIL9H4Zg6G7n1SufWaki4rNGdod-gTUhYeTqKbkI~SmzTphC6okRSBU~RvdSYde1GrpYts61KP6Vcts3GXRQ__&Key-Pair-Id=APKA9ONS7QCOWEXAMPLE`
+)
 
 // An RSA Private Key
 // Generated with
@@ -33,22 +50,36 @@ kPvsrOhaj289FDUNfIEcziEPpWbMeMmq8DcYSkUsPjKYf5gqGK9qsbuhuFJEP48q
 S7/p2V8ICzkHJ/8fOIKUC+Lu8VuiWueJXDmD/vMaghFkpC1yI4A=
 -----END RSA PRIVATE KEY-----`
 
-var expectedSignature = `ad9AA87ApevgO6cyNqlDqMOk0f35QCe7YbWyeY13vifI7xPEqyc85Nf9XBNtzyHZDD-u-nN5wcgByuMlMwN9yLDEV0B6AHVzKmcOyFuJKVqxGffrOh7LxxjpNImTJ1EgXHO-kY-buFHv5yoWraqGI7rMQ88a~dxViLrK7JL3yAQAV7HNes8dN8J1PIgTg1gSBKvNuH1QGjjyBJMcReY0kMJZsJVikHAx3N76xRzIPRBXd1-d9Q~6X6kWy8N2GuV9i4fpoa4Svwirz~HlvWjStuXN6Go7HSOnqLBCSLHnmwxhFrGFrqwTzNy671sw8VeT4NBZCrwrOtrfdAEevsen0w__`
-
-func TestSignPolicy(t *testing.T) {
+func TestSignCannedPolicy(t *testing.T) {
 	pk, err := NewRSAPrivateKeyFromBytes([]byte(privateKey))
-
 	if err != nil {
 		t.Fatalf("%s", err)
 	}
 
-	signature, err := SignPolicy(pk, cannedPolicy)
-
+	cannedPolicy := NewCannedPolicy(testURL, testExpiryTime)
+	signature, err := SignPolicy(pk, cannedPolicy, "APKA9ONS7QCOWEXAMPLE")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 
-	if signature != expectedSignature {
-		t.Fatalf("Signature does not match\n--- Got ---\n%v\n--- Expected ---\n%v\n", signature, expectedSignature)
+	if signature != expectedCannedSignature {
+		t.Fatalf("signed policy does not match\n--- Got ---\n%v\n--- Expected ---\n%v\n", signature, expectedCannedSignature)
+	}
+}
+
+func TestSignCustomPolicy(t *testing.T) {
+	pk, err := NewRSAPrivateKeyFromBytes([]byte(privateKey))
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+
+	customPolicy := NewCustomPolicy(testURL, testExpiryTime).AddStartTime(testStartTime).AddSourceIP(testSourceIP)
+	signature, err := SignPolicy(pk, customPolicy, "APKA9ONS7QCOWEXAMPLE")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	if signature != expectedCustomSignature {
+		t.Fatalf("signed policy does not match\n--- Got ---\n%v\n--- Expected ---\n%v\n", signature, expectedCustomSignature)
 	}
 }
