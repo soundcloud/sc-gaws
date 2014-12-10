@@ -99,11 +99,13 @@ func myFunc() {
 ```
 
 ### aws/cloudfront
-When using Cloudfront with Restrict Viewer Access option, every url need to be signed.
+When using CloudFront with Restrict Viewer Access option, every URL needs to be signed.
 
-This package implement [canned policies signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html).
+This package implements:
+* [Canned Policy signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html).
+* [Custom Policy signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-custom-policy.html).
 
-It require a valid [cloudfront private key](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs).
+It requires a valid [CloudFront private key](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs).
 
 ```go
 package main
@@ -118,22 +120,31 @@ import (
 func main() {
     privateKey, _ := cloudfront.NewRSAPrivateKeyFromFile("pk-KeyPairId.pem")
 
-    // if you are going to use the private key multiple time you may want to 
+    // if you are going to use the private key multiple time you may want to
     // use privateKey.Precompute() which speed up private key operations.
 
-    cannedPolicy := cloudfront.CannedPolicy{
-        Url:       "http://cloudfront-foobar.com/my-sweet-file.mp3", 
-        ExpiresAt: time.Now().Add(time.Duration(2 * time.Minute)),
-    }
+    baseURL := "http://cloudfront-foobar.com/my-sweet-file.mp3"
+    wildcardURL := "*/my-sweet-file.mp3"
+    expiresAt := time.Now().Add(time.Duration(2 * time.Minute))
 
-    signature, _ := cloudfront.SignPolicy(privateKey, cannedPolicy)
+    // Provide your URL and desired expiry time for a canned policy.
+    cannedPolicy := cloudfront.NewCannedPolicy(baseURL, expiresAt)
 
-    fmt.Printf("%v", signature)
+    // Or provide your URL, an expiry time and an optional start time and
+    // source IP address restriction for a custom policy.
+    startsAt := time.Now()
+    sourceIP := "192.0.2.1"
+    customPolicy := cloudfront.NewCustomPolicy(wildcardURL, expiresAt).AddStartTime(startsAt).AddSourceIP(sourceIP)
+
+    cannedSignature, _ := cloudfront.SignPolicy(privateKey, cannedPolicy)
+    customSignature, _ := cloudfront.SignPolicy(privateKey, customPolicy)
+
+    queryParams := "myparam=1"
+
+    fmt.Printf("%s?%s&%s", baseURL, queryParams, cannedSignature)
+    fmt.Printf("%s?%s&%s", baseURL, queryParams, customSignature)
 }
 ```
 
-Once you got your signature, you can generate a valid cloudfront URL 
-
-```
-protocol://url?Expires=ExpirationTimeInEpoch&Signature=Signature&Key-Pair-Id=CloudfrontKeyPairId
-```
+Once you have generated a signature, you can append it to your base URL to
+generate a working CloudFront URL based on the supplied parameters.
