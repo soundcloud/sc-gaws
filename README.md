@@ -105,6 +105,10 @@ This package implements:
 * [Canned Policy signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html).
 * [Custom Policy signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-custom-policy.html).
 
+*Please note:* We disable [RSA blinding](http://en.wikipedia.org/wiki/Blinding_%28cryptography%29)
+when generating signatures due to the additional CPU overhead it creates, and
+because the signing procedure never leaves this process.
+
 It requires a valid [CloudFront private key](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs).
 
 ```go
