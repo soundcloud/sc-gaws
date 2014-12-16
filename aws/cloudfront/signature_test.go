@@ -83,3 +83,21 @@ func TestSignCustomPolicy(t *testing.T) {
 		t.Fatalf("signed policy does not match\n--- Got ---\n%v\n--- Expected ---\n%v\n", signature, expectedCustomSignature)
 	}
 }
+
+func BenchmarkSignCustomPolicy(b *testing.B) {
+	pk, err := NewRSAPrivateKeyFromBytes([]byte(privateKey))
+	if err != nil {
+		b.Fatalf("%s", err)
+	}
+
+	pk.Precompute()
+
+	for i := 0; i < b.N; i++ {
+		customPolicy := NewCustomPolicy(testURL, testExpiryTime).AddStartTime(testStartTime).AddSourceIP(testSourceIP)
+		_, err := SignPolicy(pk, customPolicy, "APKA9ONS7QCOWEXAMPLE")
+
+		if err != nil {
+			b.Fatalf("%v", err)
+		}
+	}
+}
