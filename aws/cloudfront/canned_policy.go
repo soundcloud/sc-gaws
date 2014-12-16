@@ -2,7 +2,6 @@ package cloudfront
 
 import (
 	"crypto"
-	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
 	"io"
@@ -42,7 +41,7 @@ func (p CannedPolicy) signWithPrivateKey(privateKey *rsa.PrivateKey) ([]byte, er
 	digest := h.Sum(nil)
 
 	// calculates the signature of digest using RSASSA-PKCS1-V1_5-SIGN from RSA PKCS#1 v1.5.
-	if signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, hashFunc, digest); err != nil {
+	if signature, err := rsa.SignPKCS1v15(nil, privateKey, hashFunc, digest); err != nil {
 		return []byte{}, err
 	} else {
 		return signature, nil
