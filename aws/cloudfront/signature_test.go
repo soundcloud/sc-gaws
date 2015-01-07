@@ -90,8 +90,6 @@ func BenchmarkSignCustomPolicy(b *testing.B) {
 		b.Fatalf("%s", err)
 	}
 
-	pk.Precompute()
-
 	for i := 0; i < b.N; i++ {
 		customPolicy := NewCustomPolicy(testURL, testExpiryTime).AddStartTime(testStartTime).AddSourceIP(testSourceIP)
 		_, err := SignPolicy(pk, customPolicy, "APKA9ONS7QCOWEXAMPLE")

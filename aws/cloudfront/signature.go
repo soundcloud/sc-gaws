@@ -1,14 +1,13 @@
 package cloudfront
 
 import (
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/base64"
-	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/carlosmn/openssl"
 )
 
 // CloudFront uses its own Base64 encoding
@@ -17,32 +16,19 @@ const encodeCloudFront = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01
 // PolicySigner is the interface implemented by an object that can return a
 // signed string representing its CloudFront policy.
 type PolicySigner interface {
-	signWithPrivateKey(*rsa.PrivateKey) ([]byte, error)
+	signWithPrivateKey(openssl.PrivateKey) ([]byte, error)
 	String() string
 }
 
 // NewRSAPRivateKeyFromBytes get the first block of a PEM encoded bytes
-// and return a rsa.PrivateKey
-func NewRSAPrivateKeyFromBytes(b []byte) (*rsa.PrivateKey, error) {
-	// ignore blocks other than the first one  as our file contains only one private key
-	block, _ := pem.Decode(b)
-
-	if block == nil {
-		return nil, fmt.Errorf("Cannot decode PEM data")
-	}
-
-	// get a RSA private key from its ASN.1 PKCS#1 DER encoded form.
-	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot parse PKCS1 Private Key %v: %v", err)
-	} else {
-		return key, nil
-	}
+// and return a openssl.PrivateKey
+func NewRSAPrivateKeyFromBytes(b []byte) (openssl.PrivateKey, error) {
+	return openssl.LoadPrivateKeyFromPEM(b)
 }
 
 // NewRSAPrivateKeyFromFile call NewRSAPRivateKeyFromBytes on the content
-// of filename, returning an rsa.PrivateKey
-func NewRSAPrivateKeyFromFile(filename string) (*rsa.PrivateKey, error) {
+// of filename, returning an openssl.PrivateKey
+func NewRSAPrivateKeyFromFile(filename string) (openssl.PrivateKey, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot open private key file %v: %v", filename, err)
@@ -67,7 +53,7 @@ func NewRSAPrivateKeyFromFile(filename string) (*rsa.PrivateKey, error) {
 //   http://goo.gl/pvA97e
 // Command line equivalent:
 //   cat policy | openssl sha1 -sign cloudfront-keypair.pem | openssl base64 | tr '+=/' '-_~'
-func SignPolicy(privateKey *rsa.PrivateKey, policy PolicySigner, keyPairID string) (string, error) {
+func SignPolicy(privateKey openssl.PrivateKey, policy PolicySigner, keyPairID string) (string, error) {
 	signature, err := policy.signWithPrivateKey(privateKey)
 	if err != nil {
 		return "", fmt.Errorf("Cannot sign policy: %v", err)

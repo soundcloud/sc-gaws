@@ -1,12 +1,11 @@
 package cloudfront
 
 import (
-	"crypto"
-	"crypto/rsa"
 	"fmt"
-	"io"
 	"strings"
 	"time"
+
+	"github.com/carlosmn/openssl"
 )
 
 const (
@@ -33,18 +32,7 @@ func (p CannedPolicy) String() string {
 }
 
 // signWithPrivateKey returns a binary encoding of the Canned Policy signature
-func (p CannedPolicy) signWithPrivateKey(privateKey *rsa.PrivateKey) ([]byte, error) {
-	// create a sha1 digest of our policy
-	hashFunc := crypto.SHA1
-	h := hashFunc.New()
-	io.WriteString(h, p.String())
-	digest := h.Sum(nil)
-
+func (p CannedPolicy) signWithPrivateKey(privateKey openssl.PrivateKey) ([]byte, error) {
 	// calculates the signature of digest using RSASSA-PKCS1-V1_5-SIGN from RSA PKCS#1 v1.5.
-	// NOTE: By passing in nil instead of rand.Reader here, we disable RSA blinding.
-	if signature, err := rsa.SignPKCS1v15(nil, privateKey, hashFunc, digest); err != nil {
-		return []byte{}, err
-	} else {
-		return signature, nil
-	}
+	return privateKey.SignPKCS1v15(openssl.SHA1_Method, []byte(p.String()))
 }
