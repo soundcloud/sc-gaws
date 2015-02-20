@@ -1,6 +1,7 @@
 package cloudfront
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -90,8 +91,6 @@ func BenchmarkSignCustomPolicy(b *testing.B) {
 		b.Fatalf("%s", err)
 	}
 
-	pk.Precompute()
-
 	for i := 0; i < b.N; i++ {
 		customPolicy := NewCustomPolicy(testURL, testExpiryTime).AddStartTime(testStartTime).AddSourceIP(testSourceIP)
 		_, err := SignPolicy(pk, customPolicy, "APKA9ONS7QCOWEXAMPLE")
@@ -100,4 +99,36 @@ func BenchmarkSignCustomPolicy(b *testing.B) {
 			b.Fatalf("%v", err)
 		}
 	}
+}
+
+// The specific case we want to test here is when SignPKCS1v15
+// is invoked by multiple go routines, which may ends up in a race condition
+// if not properly handled.
+func TestSSLSignRaceCondition(t *testing.T) {
+	pk, err := NewRSAPrivateKeyFromBytes([]byte(privateKey))
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < 2000; i++ {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			customPolicy := NewCustomPolicy(testURL, testExpiryTime).AddStartTime(testStartTime).AddSourceIP(testSourceIP)
+			signature, err := SignPolicy(pk, customPolicy, "APKA9ONS7QCOWEXAMPLE")
+
+			if err != nil {
+				t.Fatalf("%v", err)
+			}
+
+			if signature != expectedCustomSignature {
+				t.Fatalf("signed policy does not match\n--- Got ---\n%v\n--- Expected ---\n%v\n", signature, expectedCustomSignature)
+			}
+		}()
+	}
+
+	wg.Wait()
 }

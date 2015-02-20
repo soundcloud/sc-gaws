@@ -105,9 +105,7 @@ This package implements:
 * [Canned Policy signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html).
 * [Custom Policy signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-custom-policy.html).
 
-*Please note:* We disable [RSA blinding](http://en.wikipedia.org/wiki/Blinding_%28cryptography%29)
-when generating signatures due to the additional CPU overhead it creates, and
-because the signing procedure never leaves this process.
+*Please note:* Due to performance reason we are using openssl c bindings.
 
 It requires a valid [CloudFront private key](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs).
 
@@ -123,9 +121,6 @@ import (
 
 func main() {
     privateKey, _ := cloudfront.NewRSAPrivateKeyFromFile("pk-KeyPairId.pem")
-
-    // if you are going to use the private key multiple time you may want to
-    // use privateKey.Precompute() which speed up private key operations.
 
     baseURL := "http://cloudfront-foobar.com/my-sweet-file.mp3"
     wildcardURL := "*/my-sweet-file.mp3"
