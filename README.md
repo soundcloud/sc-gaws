@@ -1,4 +1,4 @@
-# ⚠️ Deprecation notice: Please note that this project has been deprecated and is no longer actively maintained. If you are interested in working on this and would like to take over ownership, please [get in touch with us here](mainto:developers@soundcloud.com)
+# ⚠️ Deprecation notice: Please note that this project has been deprecated and is no longer actively maintained. If you are interested in working on this and would like to take over ownership, please [get in touch with us here](mailto:developers@soundcloud.com).
 
 ---
 
