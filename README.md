@@ -1,8 +1,13 @@
+# ⚠️ Deprecation notice: Please note that this project has been deprecated and is no longer actively maintained. If you are interested in working on this and would like to take over ownership, please [get in touch with us here](mailto:developers@soundcloud.com).
+
+---
+
 # sc-gaws
 
 Glue code to wrap around AWS and do useful things in Go.
 
 ## Usage
+
 ### aws/credentials
 
 ```
@@ -34,6 +39,7 @@ func myFunc() {
 ```
 
 ### aws/elasticache
+
 This package provides a mechanism for auto-discovery of ElastiCache servers.
 It is recommended you get the configuration data on a 60 second timer and
 keep track of configuration version numbers, so that you can set your
@@ -99,13 +105,15 @@ func myFunc() {
 ```
 
 ### aws/cloudfront
+
 When using CloudFront with Restrict Viewer Access option, every URL needs to be signed.
 
 This package implements:
-* [Canned Policy signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html).
-* [Custom Policy signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-custom-policy.html).
 
-*Please note:* Due to performance reason we are using openssl c bindings.
+- [Canned Policy signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html).
+- [Custom Policy signing](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-custom-policy.html).
+
+_Please note:_ Due to performance reason we are using openssl c bindings.
 
 It requires a valid [CloudFront private key](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs).
 
